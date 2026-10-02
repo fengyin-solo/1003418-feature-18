@@ -1,6 +1,25 @@
 import { MODULE_BY_KEY } from '@/data/modules'
+import {
+  BURN_KEY,
+  createPermit as createBurnPermit,
+  getPermit,
+  listLedger,
+  listPermits,
+  permitStats,
+  runPermitAction,
+} from '@/data/burnpermit'
 import { allRows, listRows, resetRows, saveRows } from '@/data/local-store'
-import type { ActionResult, EntryRow, ModuleMeta, OverviewResult, PageResult } from '@/data/types'
+import type {
+  ActionResult,
+  EntryRow,
+  ModuleMeta,
+  OverviewResult,
+  PageResult,
+  PermitActionOptions,
+  PermitDraft,
+  PermitFilters,
+  PermitPageResult,
+} from '@/data/types'
 
 // 会写进数据的「往回走」动作：命中就把这条记录标成异常态，看板上能一眼看出来。
 const NEGATIVE_ACTIONS = ['撤销', '作废', '拒绝', '驳回', '停用', '忽略', '下线', '回滚']
@@ -28,7 +47,20 @@ export function listEntries(key: string, filters: Record<string, string> = {}): 
   return { items: matched, total: matched.length, page: 1, size: matched.length }
 }
 
-export function runAction(key: string, id: number, action: string): ActionResult {
+export function runAction(
+  key: string,
+  id: number,
+  action: string,
+  options?: Partial<PermitActionOptions>,
+): ActionResult {
+  // 用火审批单沿用同一调用链，但排队、乐观锁、台账回写等领域规则交给 burnpermit 域。
+  if (key === BURN_KEY) {
+    return runPermitAction(id, action, {
+      terminal: options?.terminal ?? '防火科审批端',
+      expectedVersion: options?.expectedVersion,
+      安全措施: options?.安全措施,
+    })
+  }
   const meta = moduleMeta(key)
   const target = meta.actionTargets[action]
   if (!target) {
@@ -84,8 +116,31 @@ export function downloadEntries(key: string): void {
   URL.revokeObjectURL(url)
 }
 
-export function loadOverview(): OverviewResult {
-  const rows = allRows()
+// ── 用火审批单专用出口：待审筛选台、登记、定位、统计仍统一经由本服务 ──
+
+export { APPROVAL_TERMINALS, FIRE_TYPES } from '@/data/burnpermit'
+
+export function listBurnPermits(filters: PermitFilters): PermitPageResult {
+  return listPermits(filters)
+}
+
+export function burnPermitStats() {
+  return permitStats()
+}
+
+export function locateBurnPermit(id: number) {
+  return getPermit(id)
+}
+
+export function registerBurnPermit(draft: PermitDraft) {
+  return createBurnPermit(draft)
+}
+
+export function listBurnLedger() {
+  return listLedger()
+}
+
+export function loadOverview(): OverviewResult {  const rows = allRows()
   const modules = [...MODULE_BY_KEY.values()].map((meta) => {
     const entries = rows[meta.key] ?? []
     return {
