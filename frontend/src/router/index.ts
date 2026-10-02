@@ -18,6 +18,7 @@ const Forestroad = () => import('@/views/forestroad/index.vue')
 const Firebelt = () => import('@/views/firebelt/index.vue')
 const Drill = () => import('@/views/drill/index.vue')
 const Burnpermit = () => import('@/views/burnpermit/index.vue')
+const Fireledger = () => import('@/views/fireledger/index.vue')
 const Treegrowth = () => import('@/views/treegrowth/index.vue')
 
 const router = createRouter({
@@ -41,6 +42,7 @@ const router = createRouter({
     { path: '/firebelt', name: 'firebelt', component: Firebelt },
     { path: '/drill', name: 'drill', component: Drill },
     { path: '/burnpermit', name: 'burnpermit', component: Burnpermit },
+    { path: '/fireledger', name: 'fireledger', component: Fireledger },
     { path: '/treegrowth', name: 'treegrowth', component: Treegrowth },
   ],
 })

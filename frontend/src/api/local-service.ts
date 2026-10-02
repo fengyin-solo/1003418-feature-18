@@ -1,6 +1,11 @@
 import { MODULE_BY_KEY } from '@/data/modules'
 import { allRows, listRows, resetRows, saveRows } from '@/data/local-store'
 import type { ActionResult, EntryRow, ModuleMeta, OverviewResult, PageResult } from '@/data/types'
+import {
+  BURN_KEY,
+  concludeBurnPermit,
+  submitBurnPermit,
+} from './burn-permit'
 
 // 会写进数据的「往回走」动作：命中就把这条记录标成异常态，看板上能一眼看出来。
 const NEGATIVE_ACTIONS = ['撤销', '作废', '拒绝', '驳回', '停用', '忽略', '下线', '回滚']
@@ -28,7 +33,29 @@ export function listEntries(key: string, filters: Record<string, string> = {}): 
   return { items: matched, total: matched.length, page: 1, size: matched.length }
 }
 
-export function runAction(key: string, id: number, action: string): ActionResult {
+export type RunActionOptions = {
+  expectedVersion?: number
+  operator?: string
+}
+
+export function runAction(
+  key: string,
+  id: number,
+  action: string,
+  options: RunActionOptions = {},
+): ActionResult {
+  // 用火审批走专属领域链：排队、重复申请去重、并发结论、台账联动都在那里。
+  if (key === BURN_KEY) {
+    if (action === '提交申请') {
+      return submitBurnPermit(id)
+    }
+    if (action === '批准申请' || action === '驳回答复') {
+      return concludeBurnPermit(id, action, {
+        expectedVersion: options.expectedVersion,
+        approver: options.operator,
+      })
+    }
+  }
   const meta = moduleMeta(key)
   const target = meta.actionTargets[action]
   if (!target) {

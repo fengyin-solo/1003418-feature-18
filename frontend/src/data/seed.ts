@@ -750,6 +750,7 @@ export const SEED_ROWS: Record<string, EntryRow[]> = {
       "审批状态": "焚烧审批样例3"
     }
   ],
+  "fireledger": [],
   "treegrowth": [
     {
       "id": 1,

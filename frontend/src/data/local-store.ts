@@ -57,3 +57,13 @@ export function resetRows(key: string): EntryRow[] {
 export function storageKey(): string {
   return STORAGE_KEY
 }
+
+// 两个审批端常开在两个浏览器标签里：一端写入后，另一端通过 storage 事件让缓存失效，
+// 下一次读取拿到最新数据版本，乐观并发控制才能拦住过期结论。
+if (typeof window !== 'undefined' && window.addEventListener) {
+  window.addEventListener('storage', (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY) {
+      cache = null
+    }
+  })
+}
